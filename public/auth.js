@@ -11,14 +11,27 @@ import {
   setDoc,
 } from "https://www.gstatic.com/firebasejs/10.12.3/firebase-firestore.js";
 
+// --- Utils ---
+const getCurrentPage = () => {
+  const { pathname } = window.location;
+  if (!pathname || pathname === "/") {
+    return "index.html";
+  }
+  const lastSegment = pathname.split("/").pop();
+  if (!lastSegment || lastSegment === "") {
+    return "index.html";
+  }
+  return lastSegment;
+};
+
 const redirectByRole = (role) => {
-  if (role === "admin") {
-    window.location.href = "admin.html";
-  } else {
-    window.location.href = "student.html";
+  const targetPage = role === "admin" ? "admin.html" : "student.html";
+  if (getCurrentPage() !== targetPage) {
+    window.location.href = targetPage;
   }
 };
 
+// --- Firestore User Record ---
 const ensureUserRecord = async (user) => {
   const userRef = doc(db, "users", user.uid);
   const snapshot = await getDoc(userRef);
@@ -35,15 +48,16 @@ const ensureUserRecord = async (user) => {
   if (data && typeof data.role === "string" && data.role.trim() !== "") {
     return data.role;
   }
-
   return "student";
 };
 
+// --- DOM Events ---
 document.addEventListener("DOMContentLoaded", () => {
   const googleSignInBtn = document.getElementById("googleSignInBtn");
   const loadingIndicator = document.getElementById("loginLoading");
   const errorMessage = document.getElementById("loginError");
 
+  // Login button
   if (googleSignInBtn) {
     googleSignInBtn.addEventListener("click", async () => {
       if (errorMessage) {
@@ -82,6 +96,7 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
+  // Logout button
   const logoutButtons = document.querySelectorAll(".logout-btn");
   logoutButtons.forEach((button) => {
     button.addEventListener("click", async () => {
@@ -96,10 +111,12 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 });
 
-const currentPage = window.location.pathname.split("/").pop() || "index.html";
-
+// --- Auth State ---
 onAuthStateChanged(auth, async (user) => {
+  const currentPage = getCurrentPage();
+
   if (!user) {
+    // ถ้าไม่ล็อกอิน redirect ไป index.html
     if (currentPage !== "index.html") {
       window.location.href = "index.html";
     }
@@ -121,6 +138,7 @@ onAuthStateChanged(auth, async (user) => {
 
     if (currentPage === "student.html" && role === "admin") {
       redirectByRole(role);
+      return;
     }
   } catch (error) {
     console.error("Failed to verify user role:", error);
