@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Edulend — Student</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <span class="logo">🎒</span>
+      <h1>Edulend</h1>
+    </div>
+    <nav class="nav">
+      <button class="navlink active" data-view="itemsView">รายการอุปกรณ์</button>
+      <button class="navlink" data-view="historyView">ประวัติการยืม</button>
+      <button class="btn btn-ghost logout-btn">ออกจากระบบ</button>
+    </nav>
+  </header>
+
+  <main class="container">
+    <!-- Items Grid -->
+    <section id="itemsView">
+      <div class="section-head">
+        <h2>อุปกรณ์ที่ยืมได้</h2>
+        <div id="itemsLoading" class="loading" hidden>กำลังโหลดอุปกรณ์...</div>
+        <p id="itemsError" class="error" hidden></p>
+      </div>
+      <div id="itemsGrid" class="grid"></div>
+    </section>
+
+    <!-- History Table -->
+    <section id="historyView" hidden>
+      <div class="section-head">
+        <h2>ประวัติการยืม</h2>
+        <div id="historyLoading" class="loading" hidden>กำลังโหลดประวัติ...</div>
+        <p id="historyError" class="error" hidden></p>
+      </div>
+      <div class="table-wrap">
+        <table class="table">
+          <thead>
+            <tr>
+              <th>อุปกรณ์</th>
+              <th>สถานะ</th>
+              <th>ขอยืมเมื่อ</th>
+              <th>กำหนดคืน</th>
+            </tr>
+          </thead>
+          <tbody id="historyTableBody"></tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+
+  <div id="toast" class="toast" hidden></div>
+
+  <script type="module" src="student.js"></script>
+  <script type="module" src="auth.js"></script>
+</body>
+</html>

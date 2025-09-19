@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Edulend — Admin</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body class="with-sidebar">
+  <aside class="sidebar" id="sidebar">
+    <div class="brand side">
+      <span class="logo">🛠️</span>
+      <h2>Admin</h2>
+    </div>
+    <nav class="side-nav">
+      <button class="side-link active" data-view="itemsAdmin">อุปกรณ์</button>
+      <button class="side-link" data-view="pendingAdmin">คำขอยืม</button>
+      <button class="side-link" data-view="activeAdmin">ยืมอยู่</button>
+    </nav>
+    <div class="side-footer">
+      <button class="btn btn-ghost logout-btn w-100">ออกจากระบบ</button>
+    </div>
+  </aside>
+
+  <header class="topbar sticky">
+    <button id="toggleSidebar" class="btn btn-ghost">☰</button>
+    <div class="brand">
+      <span class="logo">🎒</span>
+      <h1>Edulend Admin</h1>
+    </div>
+  </header>
+
+  <!-- Dashboard -->
+<section id="adminStats" class="stats-grid">
+  <div class="stat-card">อุปกรณ์ทั้งหมด: <span id="statTotalItems">0</span></div>
+  <div class="stat-card">กำลังยืม: <span id="statActiveLoans">0</span></div>
+  <div class="stat-card">รออนุมัติ: <span id="statPendingLoans">0</span></div>
+</section>
+
+
+  <main class="container with-side">
+    <!-- Items Management -->
+    <!-- Items Management -->
+<section id="itemsAdmin">
+  <div class="section-head">
+    <h2>จัดการอุปกรณ์</h2>
+  </div>
+
+  <form id="itemForm" class="card form-grid">
+    <input type="hidden" id="itemId" />
+    <div class="field">
+      <label>ชื่ออุปกรณ์</label>
+      <input type="text" id="itemName" required placeholder="เช่น กล้องถ่ายรูป" />
+    </div>
+    <div class="field">
+      <label>จำนวนทั้งหมด</label>
+      <input type="number" id="itemTotal" min="0" required />
+    </div>
+    <div class="field">
+      <label>จำนวนคงเหลือ</label>
+      <input type="number" id="itemAvailable" min="0" required />
+    </div>
+    <div class="field span-2">
+      <label>คำอธิบาย</label>
+      <textarea id="itemDesc" rows="2" placeholder="รายละเอียดสั้น ๆ"></textarea>
+    </div>
+    <div class="actions span-2">
+      <button class="btn btn-primary" type="submit" id="itemSubmitBtn">บันทึก</button>
+      <button class="btn btn-ghost" type="reset" id="itemResetBtn">ล้างฟอร์ม</button>
+    </div>
+  </form>
+
+  <!-- ✅ search bar อยู่ตรงนี้ -->
+  <input type="search" id="itemSearch" placeholder="ค้นหาอุปกรณ์..." class="mt-12 w-100"/>
+
+  <div id="itemsAdminLoading" class="loading mt-12" hidden>กำลังโหลด...</div>
+  <p id="itemsAdminError" class="error mt-12" hidden></p>
+
+  <div id="itemsAdminGrid" class="grid mt-16"></div>
+</section>
+
+
+    <!-- Pending Requests -->
+    <section id="pendingAdmin" hidden>
+      <div class="section-head">
+        <h2>คำขอยืมที่รออนุมัติ</h2>
+      </div>
+      <div id="pendingLoading" class="loading" hidden>กำลังโหลด...</div>
+      <p id="pendingError" class="error" hidden></p>
+      <div class="table-wrap">
+        <table class="table">
+          <thead>
+            <tr>
+              <th>อุปกรณ์</th>
+              <th>ผู้ยืม</th>
+              <th>ขอเมื่อ</th>
+              <th>จัดการ</th>
+            </tr>
+          </thead>
+          <tbody id="pendingTableBody"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- Active Loans -->
+    <section id="activeAdmin" hidden>
+      <div class="section-head">
+        <h2>รายการที่กำลังยืม</h2>
+      </div>
+      <div id="activeLoading" class="loading" hidden>กำลังโหลด...</div>
+      <p id="activeError" class="error" hidden></p>
+      <div class="table-wrap">
+        <table class="table">
+          <thead>
+            <tr>
+              <th>อุปกรณ์</th>
+              <th>ผู้ยืม</th>
+              <th>กำหนดคืน</th>
+              <th>สถานะ</th>
+              <th>คืนของ</th>
+            </tr>
+          </thead>
+          <tbody id="activeTableBody"></tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+
+  <div id="toast" class="toast" hidden></div>
+
+  <script type="module" src="admin.js"></script>
+  <script type="module" src="auth.js"></script>
+</body>
+</html>
