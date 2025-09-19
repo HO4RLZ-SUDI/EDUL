@@ -1,8 +1,8 @@
 // auth.js
-import { app, auth, provider, db } from "../firebase-config.js";
+import { auth, db, provider } from "./firebase-config.js";
 import {
-  signInWithPopup,
   onAuthStateChanged,
+  signInWithPopup,
   signOut,
 } from "https://www.gstatic.com/firebasejs/10.12.3/firebase-auth.js";
 import {
@@ -11,79 +11,123 @@ import {
   setDoc,
 } from "https://www.gstatic.com/firebasejs/10.12.3/firebase-firestore.js";
 
-const googleBtn = document.getElementById("googleSignInBtn");
-const loadingEl = document.getElementById("loginLoading");
-const errEl = document.getElementById("loginError");
+const getCurrentPage = () => {
+  const { pathname } = window.location;
+  if (!pathname || pathname === "/") {
+    return "index.html";
+  }
+  const lastSegment = pathname.split("/").pop();
+  if (!lastSegment || lastSegment === "") {
+    return "index.html";
+  }
+  return lastSegment;
+};
 
-// Login page only
-if (googleBtn) {
-  googleBtn.addEventListener("click", async () => {
-    errEl && (errEl.hidden = true);
-    loadingEl && (loadingEl.hidden = false);
-    try {
-      const result = await signInWithPopup(auth, provider);
-      const user = result.user;
+const redirectByRole = (role) => {
+  const targetPage = role === "admin" ? "admin.html" : "student.html";
+  if (getCurrentPage() !== targetPage) {
+    window.location.href = targetPage;
+  }
+};
 
-      // Ensure user doc with role exists
-      const uref = doc(db, "users", user.uid);
-      const snap = await getDoc(uref);
-      if (!snap.exists()) {
-        await setDoc(uref, { email: user.email || "", role: "student" });
+const ensureUserRecord = async (user) => {
+  const userRef = doc(db, "users", user.uid);
+  const snapshot = await getDoc(userRef);
+
+  if (!snapshot.exists()) {
+    await setDoc(userRef, {
+      email: user.email ?? "",
+      role: "student",
+    });
+    return "student";
+  }
+
+  const data = snapshot.data();
+  if (data && typeof data.role === "string" && data.role.trim() !== "") {
+    return data.role;
+  }
+
+  return "student";
+};
+
+document.addEventListener("DOMContentLoaded", () => {
+  const googleSignInBtn = document.getElementById("googleSignInBtn");
+  const loadingIndicator = document.getElementById("loginLoading");
+  const errorMessage = document.getElementById("loginError");
+
+  if (googleSignInBtn) {
+    googleSignInBtn.addEventListener("click", async () => {
+      if (errorMessage) {
+        errorMessage.textContent = "";
+        errorMessage.hidden = true;
       }
-      const role = (snap.exists() ? snap.data()?.role : "student") || "student";
-      // redirect based on role
-      window.location.href = role === "admin" ? "admin.html" : "student.html";
-    } catch (e) {
-      console.error(e);
-      if (errEl) {
-        errEl.textContent = e?.message || "เข้าสู่ระบบล้มเหลว";
-        errEl.hidden = false;
+      if (loadingIndicator) {
+        loadingIndicator.hidden = false;
       }
-    } finally {
-      loadingEl && (loadingEl.hidden = true);
-    }
+
+      try {
+        const result = await signInWithPopup(auth, provider);
+        const user = result.user;
+
+        if (!user) {
+          throw new Error("Unable to retrieve user information from Google Sign-In.");
+        }
+
+        const role = await ensureUserRecord(user);
+        redirectByRole(role);
+      } catch (error) {
+        console.error("Google sign-in failed:", error);
+        if (errorMessage) {
+          const message =
+            error instanceof Error
+              ? error.message
+              : "Unable to sign in with Google. Please try again.";
+          errorMessage.textContent = message;
+          errorMessage.hidden = false;
+        }
+      } finally {
+        if (loadingIndicator) {
+          loadingIndicator.hidden = true;
+        }
+      }
+    });
+  }
+
+  const logoutButtons = document.querySelectorAll(".logout-btn");
+  logoutButtons.forEach((button) => {
+    button.addEventListener("click", async () => {
+      try {
+        await signOut(auth);
+      } catch (error) {
+        console.error("Sign-out failed:", error);
+      } finally {
+        window.location.href = "index.html";
+      }
+    });
   });
-}
+});
 
-// Common: logout hooks on any page
-document.querySelectorAll(".logout-btn").forEach((btn) =>
-  btn.addEventListener("click", async () => {
-    try {
-      await signOut(auth);
+onAuthStateChanged(auth, async (user) => {
+  const currentPage = getCurrentPage();
+
+  if (!user) {
+    if (currentPage !== "index.html") {
       window.location.href = "index.html";
-    } catch (e) {
-      alert("ออกจากระบบล้มเหลว: " + (e?.message || e));
     }
-  })
-);
+    return;
+  }
 
-// Guard pages: redirect if not logged-in and ensure role routes
-const path = location.pathname.split("/").pop();
-const needsGuard = ["student.html", "admin.html"].includes(path);
+  try {
+    const role = await ensureUserRecord(user);
+    const targetPage = role === "admin" ? "admin.html" : "student.html";
 
-if (needsGuard) {
-  onAuthStateChanged(auth, async (user) => {
-    if (!user) {
+    if (currentPage !== targetPage) {
+      window.location.href = targetPage;
+    }
+  } catch (error) {
+    console.error("Failed to verify user role:", error);
+    if (currentPage !== "index.html") {
       window.location.href = "index.html";
-      return;
     }
-    // check role
-    try {
-      const uref = doc(db, "users", user.uid);
-      const snap = await getDoc(uref);
-      const role = snap.exists() ? snap.data()?.role : "student";
-
-      if (path === "admin.html" && role !== "admin") {
-        // not admin
-        window.location.href = "student.html";
-      }
-      if (path === "student.html" && role === "admin") {
-        // admin -> admin
-        window.location.href = "admin.html";
-      }
-    } catch (e) {
-      console.error("role check error", e);
-      // fallback allow student
-    }
-  });
-}
+  }
+});

@@ -1,5 +1,5 @@
 // admin.js
-import { auth, db } from "../firebase-config.js";
+import { auth, db } from "./firebase-config.js";
 import {
   onAuthStateChanged,
 } from "https://www.gstatic.com/firebasejs/10.12.3/firebase-auth.js";
@@ -28,14 +28,23 @@ const views = {
   itemsAdmin: document.getElementById("itemsAdmin"),
   pendingAdmin: document.getElementById("pendingAdmin"),
   activeAdmin: document.getElementById("activeAdmin"),
-  historyAdmin: document.getElementById("historyAdmin"),
 };
+
+const historyView = document.getElementById("historyAdmin");
+if (historyView) {
+  views.historyAdmin = historyView;
+}
+
 viewButtons.forEach((btn) =>
   btn.addEventListener("click", () => {
     viewButtons.forEach((b) => b.classList.remove("active"));
     btn.classList.add("active");
     const v = btn.dataset.view;
-    Object.keys(views).forEach((key) => (views[key].hidden = key !== v));
+    Object.entries(views).forEach(([key, section]) => {
+      if (section) {
+        section.hidden = key !== v;
+      }
+    });
   })
 );
 
@@ -78,6 +87,7 @@ const activeError = document.getElementById("activeError");
 const historyTbody = document.getElementById("historyTableBody");
 const historyLoading = document.getElementById("historyLoading");
 const historyError = document.getElementById("historyError");
+const hasHistorySection = Boolean(historyTbody && historyLoading && historyError);
 
 let currentUser = null;
 let userCache = new Map(); // uid -> email
@@ -373,6 +383,10 @@ async function recordReturn(loanId) {
 
 // ========== History ==========
 async function refreshHistory() {
+  if (!hasHistorySection) {
+    return;
+  }
+
   try {
     historyError.hidden = true;
     historyLoading.hidden = false;
