@@ -11,6 +11,7 @@ import {
   setDoc,
 } from "https://www.gstatic.com/firebasejs/10.12.3/firebase-firestore.js";
 
+// --- Utils ---
 const getCurrentPage = () => {
   const { pathname } = window.location;
   if (!pathname || pathname === "/") {
@@ -30,6 +31,7 @@ const redirectByRole = (role) => {
   }
 };
 
+// --- Firestore User Record ---
 const ensureUserRecord = async (user) => {
   const userRef = doc(db, "users", user.uid);
   const snapshot = await getDoc(userRef);
@@ -46,15 +48,16 @@ const ensureUserRecord = async (user) => {
   if (data && typeof data.role === "string" && data.role.trim() !== "") {
     return data.role;
   }
-
   return "student";
 };
 
+// --- DOM Events ---
 document.addEventListener("DOMContentLoaded", () => {
   const googleSignInBtn = document.getElementById("googleSignInBtn");
   const loadingIndicator = document.getElementById("loginLoading");
   const errorMessage = document.getElementById("loginError");
 
+  // Login button
   if (googleSignInBtn) {
     googleSignInBtn.addEventListener("click", async () => {
       if (errorMessage) {
@@ -93,6 +96,7 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
+  // Logout button
   const logoutButtons = document.querySelectorAll(".logout-btn");
   logoutButtons.forEach((button) => {
     button.addEventListener("click", async () => {
@@ -107,10 +111,12 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 });
 
+// --- Auth State ---
 onAuthStateChanged(auth, async (user) => {
   const currentPage = getCurrentPage();
 
   if (!user) {
+    // ถ้าไม่ล็อกอิน redirect ไป index.html
     if (currentPage !== "index.html") {
       window.location.href = "index.html";
     }
@@ -119,10 +125,20 @@ onAuthStateChanged(auth, async (user) => {
 
   try {
     const role = await ensureUserRecord(user);
-    const targetPage = role === "admin" ? "admin.html" : "student.html";
 
-    if (currentPage !== targetPage) {
-      window.location.href = targetPage;
+    if (currentPage === "index.html") {
+      redirectByRole(role);
+      return;
+    }
+
+    if (currentPage === "admin.html" && role !== "admin") {
+      redirectByRole(role);
+      return;
+    }
+
+    if (currentPage === "student.html" && role === "admin") {
+      redirectByRole(role);
+      return;
     }
   } catch (error) {
     console.error("Failed to verify user role:", error);
